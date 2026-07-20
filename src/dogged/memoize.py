@@ -3,24 +3,38 @@ from __future__ import annotations
 import functools
 import time
 from collections.abc import Callable
-from typing import Protocol, cast
+from typing import Protocol, cast, overload
 
 from ._types import P, R, R_co
 
 
 class Memoized(Protocol[P, R_co]):
+    __name__: str
+
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R_co: ...
     def cache_clear(self) -> None: ...
 
 
-def memoize(ttl: float | None = None) -> Callable[[Callable[P, R]], Memoized[P, R]]:
+@overload
+def memoize(func: Callable[P, R], /) -> Memoized[P, R]: ...
+
+
+@overload
+def memoize(
+    func: None = None, /, *, ttl: float | None = None
+) -> Callable[[Callable[P, R]], Memoized[P, R]]: ...
+
+
+def memoize(
+    func: Callable[P, R] | None = None, /, *, ttl: float | None = None
+) -> Memoized[P, R] | Callable[[Callable[P, R]], Memoized[P, R]]:
     if ttl is not None and ttl <= 0:
         raise ValueError("ttl must be positive")
 
-    def decorator(func: Callable[P, R]) -> Memoized[P, R]:
+    def decorator(target: Callable[P, R]) -> Memoized[P, R]:
         cache: dict[object, tuple[R, float]] = {}
 
-        @functools.wraps(func)
+        @functools.wraps(target)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             key: object = (args, tuple(sorted(kwargs.items())))
             now = time.monotonic()
@@ -29,7 +43,7 @@ def memoize(ttl: float | None = None) -> Callable[[Callable[P, R]], Memoized[P, 
                 value, stored_at = cached
                 if ttl is None or now - stored_at < ttl:
                     return value
-            result = func(*args, **kwargs)
+            result = target(*args, **kwargs)
             cache[key] = (result, now)
             return result
 
@@ -39,4 +53,6 @@ def memoize(ttl: float | None = None) -> Callable[[Callable[P, R]], Memoized[P, 
         wrapper.cache_clear = cache_clear  # type: ignore[attr-defined]
         return cast("Memoized[P, R]", wrapper)
 
-    return decorator
+    if func is None:
+        return decorator
+    return decorator(func)
