@@ -101,3 +101,14 @@ def test_max_delay_caps_backoff(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_rejects_bad_times(bad: int) -> None:
     with pytest.raises(ValueError):
         retry(times=bad)
+
+@pytest.mark.parametrize("bad", [-0.1, -1.0])
+def test_rejects_negative_delay(bad: float) -> None:
+    with pytest.raises(ValueError, match="delay must be non-negative"):
+        retry(delay=bad)
+
+
+@pytest.mark.parametrize("bad", [0.0, 0.5])
+def test_rejects_backoff_below_one(bad: float) -> None:
+    with pytest.raises(ValueError, match="backoff must be at least 1"):
+        retry(backoff=bad)

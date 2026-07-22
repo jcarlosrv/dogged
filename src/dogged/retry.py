@@ -45,7 +45,7 @@ def retry(
     def decorator(target: Callable[P, R]) -> Callable[P, R]:
         @functools.wraps(target)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-            current_delay = delay
+            current_delay = delay if max_delay is None else min(delay, max_delay)
             for attempt in range(1, times + 1):
                 try:
                     return target(*args, **kwargs)
