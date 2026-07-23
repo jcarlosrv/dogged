@@ -1,5 +1,7 @@
 # dogged
 
+[![CI](https://github.com/jcarlosrv/dogged/actions/workflows/ci.yml/badge.svg)](https://github.com/jcarlosrv/dogged/actions/workflows/ci.yml)
+
 Zero-dependency, strictly-typed resilience decorators for Python.
 
 `retry` | `timeout` | `memoize` | `rate_limit` | `circuit_breaker`
